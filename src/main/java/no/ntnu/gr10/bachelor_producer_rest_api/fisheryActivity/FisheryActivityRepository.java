@@ -6,9 +6,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface FisheryActivityRepository extends JpaRepository<FisheryActivity, Long> {
-  List<FisheryActivity> findAllByCompany_Id(Long companyId);
   Optional<FisheryActivity> findFisheryActivityByIdAndCompany_Id(Long id, Long companyId);
-
-
-
+  Optional<FisheryActivity> getFisheryActivitiesById(Long id);
 }

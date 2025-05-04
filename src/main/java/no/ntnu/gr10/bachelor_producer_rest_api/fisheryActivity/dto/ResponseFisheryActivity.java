@@ -10,6 +10,9 @@ public record ResponseFisheryActivity (
         @Schema(description = "Unique identifier of the activity", example = "1")
         Long id,
 
+        @Schema(description = "Unique identifier for the company", example = "1")
+        Long companyId,
+
         @Schema(description = "Timestamp when the activity was set up", example = "2025-04-20T01:47:10")
         LocalDateTime setupDateTime,
 
@@ -48,6 +51,7 @@ public record ResponseFisheryActivity (
   public static ResponseFisheryActivity fromEntity(FisheryActivity entity) {
     return new ResponseFisheryActivity(
             entity.getId(),
+            entity.getCompany().getId(),
             entity.getSetupDateTime(),
             entity.getToolTypeCode(),
             entity.getToolTypeName(),
