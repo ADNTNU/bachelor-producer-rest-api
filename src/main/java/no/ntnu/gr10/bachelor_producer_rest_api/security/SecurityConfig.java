@@ -34,7 +34,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.disable())
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/fisheryActivities/**").hasRole(Scope.ADMIN.getAuthority())
+                    .requestMatchers("/fisheryActivities/**").hasAuthority(Scope.ADMIN.getAuthority())
                     .requestMatchers(
                             "/swagger-ui/**",
                             "/v3/api-docs/**"

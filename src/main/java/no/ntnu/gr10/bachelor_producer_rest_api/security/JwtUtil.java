@@ -11,10 +11,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class JwtUtil {
@@ -31,29 +28,15 @@ public class JwtUtil {
 
     Integer companyId = claims.get(COMPANY_ID_CLAIM, Integer.class);
 
-    Object rawScopes = claims.get(SCOPES_CLAIM);
+    @SuppressWarnings("unchecked")
+    List<Object> raw = claims.get(SCOPES_CLAIM, List.class);
 
-    List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+    List<SimpleGrantedAuthority> auths = raw.stream()
+            .map(Object::toString)
+            .map(SimpleGrantedAuthority::new)
+            .toList();
 
-    if (rawScopes instanceof String) {
-      for (String scope : ((String) rawScopes).split("\\s+")) {
-        String role = scope.startsWith("ROLE_") ? scope : "ROLE_" + scope;
-        authorities.add(new SimpleGrantedAuthority(role));
-      }
-    }
-    else if (rawScopes instanceof List<?>) {
-      for (Object item : (List<?>) rawScopes) {
-        String authority = item instanceof Map<?,?> map && map.containsKey("authority")
-                ? map.get("authority").toString()
-                : item.toString();
-        if (!authority.startsWith("ROLE_")) {
-          authority = "ROLE_" + authority;
-        }
-        authorities.add(new SimpleGrantedAuthority(authority));
-      }
-    }
-
-     return new JwtPayload(companyId, Collections.unmodifiableList(authorities));
+    return new JwtPayload(companyId, auths);
   }
 
   private Claims verifyTokenAndGetClaims(String token) throws JwtException, IllegalArgumentException {
