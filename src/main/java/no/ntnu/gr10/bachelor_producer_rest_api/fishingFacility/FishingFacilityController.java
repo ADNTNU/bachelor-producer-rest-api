@@ -1,5 +1,7 @@
 package no.ntnu.gr10.bachelor_producer_rest_api.fishingFacility;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,6 +13,10 @@ import no.ntnu.gr10.bachelor_producer_rest_api.exception.CompanyNotFoundExceptio
 import no.ntnu.gr10.bachelor_producer_rest_api.exception.FishingFacilityNotFoundException;
 import no.ntnu.gr10.bachelor_producer_rest_api.fishingFacility.dto.CreateFishingFacility;
 import no.ntnu.gr10.bachelor_producer_rest_api.fishingFacility.dto.ResponseFishingFacility;
+import no.ntnu.gr10.bachelor_producer_rest_api.rabbit.RabbitPublisher;
+import no.ntnu.gr10.bachelor_producer_rest_api.rabbit.RabbitQueueType;
+import no.ntnu.gr10.bachelor_producer_rest_api.rabbit.RabbitQueueUtils;
+import no.ntnu.gr10.bachelor_producer_rest_api.scope.Scope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -25,10 +31,12 @@ import org.springframework.web.bind.annotation.*;
 public class FishingFacilityController {
 
   private final FishingFacilityService fishingFacilityService;
+  private final RabbitPublisher rabbitPublisher;
   private static final Logger log = LoggerFactory.getLogger(FishingFacilityController.class);
 
-  public FishingFacilityController(FishingFacilityService fishingFacilityService){
+  public FishingFacilityController(FishingFacilityService fishingFacilityService, RabbitPublisher rabbitPublisher) {
     this.fishingFacilityService = fishingFacilityService;
+    this.rabbitPublisher = rabbitPublisher;
   }
 
   @Operation(summary = "Create a new fishing facility",
@@ -48,6 +56,15 @@ public class FishingFacilityController {
           CreateFishingFacility createDto) {
     try {
       FishingFacility facility = fishingFacilityService.createFishingFacility(createDto);
+
+      ObjectMapper mapper = new ObjectMapper();
+      // register the JSR-310 module
+      mapper.registerModule(new JavaTimeModule());
+
+      //    Publish to RabbitMQ
+      String queueName = RabbitQueueUtils.getDynamicQueueName(String.valueOf(facility.getCompany().getId()), Scope.FISHING_FACILITY.toString(), RabbitQueueType.CREATE);
+      rabbitPublisher.publish(queueName, mapper.writeValueAsString(ResponseFishingFacility.fromEntity(facility)));
+
       return ResponseEntity.status(HttpStatus.CREATED)
               .body(ResponseFishingFacility.fromEntity(facility));
     } catch (CompanyNotFoundException e) {

@@ -1,10 +1,18 @@
 package no.ntnu.gr10.bachelor_producer_rest_api.fishingFacility;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import no.ntnu.gr10.bachelor_producer_rest_api.company.Company;
 import no.ntnu.gr10.bachelor_producer_rest_api.company.CompanyService;
 import no.ntnu.gr10.bachelor_producer_rest_api.exception.CompanyNotFoundException;
 import no.ntnu.gr10.bachelor_producer_rest_api.exception.FishingFacilityNotFoundException;
 import no.ntnu.gr10.bachelor_producer_rest_api.fishingFacility.dto.CreateFishingFacility;
+import no.ntnu.gr10.bachelor_producer_rest_api.fishingFacility.dto.ResponseFishingFacility;
+import no.ntnu.gr10.bachelor_producer_rest_api.rabbit.RabbitPublisher;
+import no.ntnu.gr10.bachelor_producer_rest_api.rabbit.RabbitQueueType;
+import no.ntnu.gr10.bachelor_producer_rest_api.rabbit.RabbitQueueUtils;
+import no.ntnu.gr10.bachelor_producer_rest_api.scope.Scope;
 import org.springframework.stereotype.Service;
 
 
@@ -13,10 +21,12 @@ public class FishingFacilityService {
 
   private final FishingFacilityRepository fishingFacilityRepository;
   private final CompanyService companyService;
+  private final RabbitPublisher rabbitPublisher;
 
-  public FishingFacilityService(FishingFacilityRepository fishingFacilityRepository, CompanyService companyService){
+  public FishingFacilityService(FishingFacilityRepository fishingFacilityRepository, CompanyService companyService, RabbitPublisher rabbitPublisher) {
     this.fishingFacilityRepository = fishingFacilityRepository;
     this.companyService = companyService;
+    this.rabbitPublisher = rabbitPublisher;
   }
 
   public FishingFacility getByIdAndCompanyId(Long id, Long companyId) throws FishingFacilityNotFoundException {
@@ -26,7 +36,7 @@ public class FishingFacilityService {
                     "Could not find Fishing Facility with that ID!"));
   }
 
-  public FishingFacility createFishingFacility(CreateFishingFacility dto) throws CompanyNotFoundException {
+  public FishingFacility createFishingFacility(CreateFishingFacility dto) throws CompanyNotFoundException, JsonProcessingException {
     Company company = companyService.getCompanyById(dto.companyId());
 
     FishingFacility ff = new FishingFacility();
