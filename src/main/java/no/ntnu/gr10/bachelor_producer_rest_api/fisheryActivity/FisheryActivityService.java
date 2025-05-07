@@ -1,10 +1,18 @@
 package no.ntnu.gr10.bachelor_producer_rest_api.fisheryActivity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import no.ntnu.gr10.bachelor_producer_rest_api.company.Company;
 import no.ntnu.gr10.bachelor_producer_rest_api.company.CompanyService;
 import no.ntnu.gr10.bachelor_producer_rest_api.exception.CompanyNotFoundException;
 import no.ntnu.gr10.bachelor_producer_rest_api.exception.FisheryActivityNotFoundException;
 import no.ntnu.gr10.bachelor_producer_rest_api.fisheryActivity.dto.CreateFisheryActivity;
+import no.ntnu.gr10.bachelor_producer_rest_api.fisheryActivity.dto.ResponseFisheryActivity;
+import no.ntnu.gr10.bachelor_producer_rest_api.rabbit.RabbitPublisher;
+import no.ntnu.gr10.bachelor_producer_rest_api.rabbit.RabbitQueueType;
+import no.ntnu.gr10.bachelor_producer_rest_api.rabbit.RabbitQueueUtils;
+import no.ntnu.gr10.bachelor_producer_rest_api.scope.Scope;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,13 +20,15 @@ public class FisheryActivityService {
 
   final FisheryActivityRepository fisheryActivityRepository;
   final CompanyService companyService;
+  final RabbitPublisher rabbitPublisher;
 
-  public FisheryActivityService(FisheryActivityRepository fisheryActivityRepository, CompanyService companyService){
+  public FisheryActivityService(FisheryActivityRepository fisheryActivityRepository, CompanyService companyService, RabbitPublisher rabbitPublisher) {
     this.fisheryActivityRepository = fisheryActivityRepository;
     this.companyService = companyService;
+    this.rabbitPublisher = rabbitPublisher;
   }
 
-  public FisheryActivity getByIdAndCompanyId(Long id, Long companyId) throws FisheryActivityNotFoundException{
+  public FisheryActivity getByIdAndCompanyId(Long id, Long companyId) throws FisheryActivityNotFoundException {
     return fisheryActivityRepository.findFisheryActivityByIdAndCompany_Id(id, companyId)
             .orElseThrow(() -> new FisheryActivityNotFoundException("Could not find Fishery Activity with that ID!"));
   }
@@ -38,8 +48,8 @@ public class FisheryActivityService {
     fisheryActivity.setStartingPointLon(createFisheryActivity.startingPointLon());
     fisheryActivity.setLength(createFisheryActivity.length());
     fisheryActivity.setGeometry(createFisheryActivity.geometry());
-    return fisheryActivityRepository.save(fisheryActivity);
 
+    return fisheryActivityRepository.save(fisheryActivity);
   }
 
   public FisheryActivity updateForCompany(Long id, CreateFisheryActivity cmd) throws FisheryActivityNotFoundException {
@@ -58,7 +68,7 @@ public class FisheryActivityService {
     return fisheryActivityRepository.save(existing);
   }
 
-  public void deleteByIdAndCompanyId(Long id) throws FisheryActivityNotFoundException{
+  public void deleteByIdAndCompanyId(Long id) throws FisheryActivityNotFoundException {
     FisheryActivity fa = fisheryActivityRepository.getFisheryActivitiesById(id)
             .orElseThrow(() -> new FisheryActivityNotFoundException("Fishery with that id was not found"));
     fisheryActivityRepository.delete(fa);
