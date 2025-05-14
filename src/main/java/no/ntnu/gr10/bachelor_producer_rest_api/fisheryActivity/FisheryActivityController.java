@@ -76,7 +76,7 @@ public class FisheryActivityController {
       return ResponseEntity.status(HttpStatus.NOT_FOUND)
               .body(new ErrorResponse("Could not find a company with that id"));
     } catch (Exception e){
-      log.error("Error creating Fishery Activity");
+      log.error("Error creating Fishery Activity", e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
               .body(new ErrorResponse("An error occurred while creating the company"));
     }
